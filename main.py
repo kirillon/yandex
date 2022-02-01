@@ -25,11 +25,16 @@ class MainWindow(QMainWindow):
         uic.loadUi("./main.ui", self)
         self.mp = MapParams(61, 50, 16)
         self.load_map()
+        self.pushButton.clicked.connect(self.search)
 
-    def load_map(self):
-
-        map_request = "http://static-maps.yandex.ru/1.x/?ll={ll}&z={z}&l={type}".format(ll=self.mp.ll(), z=self.mp.zoom,
+    def load_map(self, met=None):
+        if not met:
+            map_request = "http://static-maps.yandex.ru/1.x/?ll={ll}&z={z}&l={type}".format(ll=self.mp.ll(), z=self.mp.zoom,
                                                                                         type=self.mp.type)
+        else:
+            map_request = "http://static-maps.yandex.ru/1.x/?ll={ll}&z={z}&l={type}&pt={ll}".format(ll=self.mp.ll(),
+                                                                                            z=self.mp.zoom,
+                                                                                            type=self.mp.type)
         response = requests.get(map_request)
         if not response:
             print("Ошибка выполнения запроса:")
@@ -67,6 +72,17 @@ class MainWindow(QMainWindow):
             if self.mp.zoom >= 5:
                 self.mp.zoom -= 1
                 self.load_map()
+    def search(self):
+        text = self.textEdit.toPlainText()
+        print(text)
+        api = "dda3ddba-c9ea-4ead-9010-f43fbc15c6e3"
+        map_request = f"https://search-maps.yandex.ru/v1/?text={text}&lang=ru_RU&results=1&apikey={api}"
+        print(map_request)
+        response = requests.get(map_request).json()
+
+        self.mp.lat = response["features"][0]["geometry"]["coordinates"][1]
+        self.mp.lon = response["features"][0]["geometry"]["coordinates"][0]
+        self.load_map(met=1)
 
 
 def except_hook(cls, exception, traceback):
