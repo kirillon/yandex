@@ -13,10 +13,14 @@ class MapParams(object):
         self.lon = lat
         self.zoom = zoom  # Масштаб карты на старте. Изменяется от 1 до 19
         self.type = "map"  # Другие значения "sat", "sat,skl"
+        self.point_coord =None
 
     # Преобразование координат в параметр ll, требуется без пробелов, через запятую и без скобок
     def ll(self):
         return str(self.lon) + "," + str(self.lat)
+    def pc(self):
+        if self.point_coord is not None:
+            return  str(self.point_coord[0]) + "," + str(self.point_coord[1])
 
 
 class MainWindow(QMainWindow):
@@ -28,11 +32,12 @@ class MainWindow(QMainWindow):
         self.pushButton.clicked.connect(self.search)
 
     def load_map(self, met=None):
-        if not met:
-            map_request = "http://static-maps.yandex.ru/1.x/?ll={ll}&z={z}&l={type}".format(ll=self.mp.ll(), z=self.mp.zoom,
-                                                                                        type=self.mp.type)
+        if self.mp.point_coord is  not None:
+            map_request = "http://static-maps.yandex.ru/1.x/?ll={ll}&z={z}&l={type}&pt={pc}".format(ll=self.mp.ll(),
+                                                                                                    z=self.mp.zoom,
+                                                                                                    type=self.mp.type,pc=self.mp.pc())
         else:
-            map_request = "http://static-maps.yandex.ru/1.x/?ll={ll}&z={z}&l={type}&pt={ll}".format(ll=self.mp.ll(),
+            map_request = "http://static-maps.yandex.ru/1.x/?ll={ll}&z={z}&l={type}".format(ll=self.mp.ll(),
                                                                                             z=self.mp.zoom,
                                                                                             type=self.mp.type)
         response = requests.get(map_request)
@@ -82,6 +87,7 @@ class MainWindow(QMainWindow):
 
         self.mp.lat = response["features"][0]["geometry"]["coordinates"][1]
         self.mp.lon = response["features"][0]["geometry"]["coordinates"][0]
+        self.mp.point_coord = self.mp.lon,self.mp.lat
         self.load_map(met=1)
 
 
