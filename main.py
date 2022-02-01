@@ -1,16 +1,16 @@
 import pygame, requests, sys, os
+
 # Создайте оконное приложение, отображающее карту по координатам и в масштабе, который задаётся программно.
 from PyQt5 import uic
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QMainWindow, QApplication
-from PyQt5.QtCore import Qt
 
 
 class MapParams(object):
-    def __init__(self, zoom):
+    def __init__(self):
         self.lat = 61.665279  # Координаты центра карты на старте. Задал координаты университета
         self.lon = 50.813492
-        self.zoom = zoom  # Масштаб карты на старте. Изменяется от 1 до 19
+        self.zoom = 16  # Масштаб карты на старте. Изменяется от 1 до 19
         self.type = "map"  # Другие значения "sat", "sat,skl"
 
     # Преобразование координат в параметр ll, требуется без пробелов, через запятую и без скобок
@@ -22,11 +22,10 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         uic.loadUi("./main.ui", self)
-        self.zoom = 16
-        self.load_map(self.zoom)
+        self.load_map()
 
-    def load_map(self, zoom):
-        mp = MapParams(zoom)
+    def load_map(self):
+        mp = MapParams()
         map_request = "http://static-maps.yandex.ru/1.x/?ll={ll}&z={z}&l={type}".format(ll=mp.ll(), z=mp.zoom,
                                                                                         type=mp.type)
         response = requests.get(map_request)
@@ -43,14 +42,6 @@ class MainWindow(QMainWindow):
             file.write(response.content)
         pixmap = QPixmap(map_file)
         self.label.setPixmap(pixmap)
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_PageUp:
-            if self.zoom + 1 <= 20:
-                self.zoom += 1
-        if event.key() == Qt.Key_PageDown:
-            if self.zoom + 1 >= 5:
-                self.zoom -= 1
 
 
 def except_hook(cls, exception, traceback):
