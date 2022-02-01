@@ -8,8 +8,8 @@ from PyQt5.QtWidgets import QMainWindow, QApplication
 
 class MapParams(object):
     def __init__(self):
-        self.lat = 61.665279  # Координаты центра карты на старте. Задал координаты университета
-        self.lon = 50.813492
+        self.lat = 60  # Координаты центра карты на старте. Задал координаты университета
+        self.lon = 41
         self.zoom = 16  # Масштаб карты на старте. Изменяется от 1 до 19
         self.type = "map"  # Другие значения "sat", "sat,skl"
 
