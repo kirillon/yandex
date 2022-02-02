@@ -4,7 +4,7 @@ import requests, sys, os
 from PyQt5 import uic
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QMainWindow, QApplication
+from PyQt5.QtWidgets import QMainWindow, QApplication, QButtonGroup
 
 
 class MapParams(object):
@@ -13,14 +13,15 @@ class MapParams(object):
         self.lon = lat
         self.zoom = zoom  # Масштаб карты на старте. Изменяется от 1 до 19
         self.type = "map"  # Другие значения "sat", "sat,skl"
-        self.point_coord =None
+        self.point_coord = None
 
     # Преобразование координат в параметр ll, требуется без пробелов, через запятую и без скобок
     def ll(self):
         return str(self.lon) + "," + str(self.lat)
+
     def pc(self):
         if self.point_coord is not None:
-            return  str(self.point_coord[0]) + "," + str(self.point_coord[1])
+            return str(self.point_coord[0]) + "," + str(self.point_coord[1])
 
 
 class MainWindow(QMainWindow):
@@ -30,12 +31,18 @@ class MainWindow(QMainWindow):
         self.mp = MapParams(61, 50, 16)
         self.load_map()
         self.pushButton.clicked.connect(self.search)
+        self.group = QButtonGroup()
+        self.group.addButton(self.radioButton)
+        self.group.addButton(self.radioButton_2)
+        self.group.addButton(self.radioButton_3)
+        self.group.buttonClicked.connect(self.layers)
 
     def load_map(self, met=None):
-        if self.mp.point_coord is  not None:
+        if self.mp.point_coord is not None:
             map_request = "http://static-maps.yandex.ru/1.x/?ll={ll}&z={z}&l={type}&pt={pc}".format(ll=self.mp.ll(),
                                                                                                     z=self.mp.zoom,
-                                                                                                    type=self.mp.type,pc=self.mp.pc())
+                                                                                                    type=self.mp.type,
+                                                                                                    pc=self.mp.pc())
         else:
             map_request = "http://static-maps.yandex.ru/1.x/?ll={ll}&z={z}&l={type}".format(ll=self.mp.ll(),
                                                                                             z=self.mp.zoom,
@@ -77,6 +84,7 @@ class MainWindow(QMainWindow):
             if self.mp.zoom >= 5:
                 self.mp.zoom -= 1
                 self.load_map()
+
     def search(self):
         text = self.textEdit.toPlainText()
         print(text)
@@ -84,11 +92,25 @@ class MainWindow(QMainWindow):
         map_request = f"https://search-maps.yandex.ru/v1/?text={text}&lang=ru_RU&results=1&apikey={api}"
         print(map_request)
         response = requests.get(map_request).json()
+        try:
+            self.mp.lat = response["features"][0]["geometry"]["coordinates"][1]
+            self.mp.lon = response["features"][0]["geometry"]["coordinates"][0]
+            self.mp.point_coord = self.mp.lon, self.mp.lat
+            self.load_map(met=1)
+        except KeyError:
+            pass
 
-        self.mp.lat = response["features"][0]["geometry"]["coordinates"][1]
-        self.mp.lon = response["features"][0]["geometry"]["coordinates"][0]
-        self.mp.point_coord = self.mp.lon,self.mp.lat
-        self.load_map(met=1)
+    def layers(self, button):
+        n = button.text()
+        if n == "Схема":
+            self.mp.type = "map"
+            self.load_map()
+        elif n == "Спутник":
+            self.mp.type = "sat"
+            self.load_map()
+        else:
+            self.mp.type = "sat,skl"
+            self.load_map()
 
 
 def except_hook(cls, exception, traceback):
